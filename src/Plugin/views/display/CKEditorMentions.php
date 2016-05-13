@@ -87,7 +87,7 @@ class CKEditorMentions extends DisplayPluginBase {
    * {@inheritdoc}
    */
   public function getType() {
-    return 'ckeditor_mentions_display';
+    return 'ckeditor_mentions';
   }
 
   /**
@@ -126,9 +126,9 @@ class CKEditorMentions extends DisplayPluginBase {
     $id_field = $this->view->storage->get('base_field');
     $this->id_field_alias = $this->view->query->addField($this->view->storage->get('base_table'), $id_field);
 
-    /*
 
-    $options = $this->getOption('entity_reference_options');
+
+    $options = $this->getOption('ckeditor_mentions_options');
 
     // Restrict the autocomplete options based on what's been typed already.
     if (isset($options['match'])) {
@@ -162,7 +162,7 @@ class CKEditorMentions extends DisplayPluginBase {
     }
 
     $this->view->setItemsPerPage($options['limit']);
-    */
+
   }
 
   /**

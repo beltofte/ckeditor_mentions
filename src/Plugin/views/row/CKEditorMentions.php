@@ -42,8 +42,17 @@ class CKEditorMentions extends Fields {
   public function buildOptionsForm(&$form, FormStateInterface $form_state) {
     parent::buildOptionsForm($form, $form_state);
 
-    // Expand the description of the 'Inline field' checkboxes.
-    $form['inline']['#description'] .= '<br />' . $this->t("<strong>Note:</strong> In 'CKEditor Mentions' displays, all fields will be displayed inline unless an explicit selection of inline fields is made here." );
+    // Removing access to fields not relevant for this row style plugin.
+    $form['default_field_elements']['#access'] = FALSE;
+    $form['inline']['#access'] = FALSE;
+    $form['hide_empty']['#access'] = FALSE;
+    $form['separator']['#type'] = 'hidden';
+
+    // Notice about no settings in the CKEditor Mentions style options.
+    $form['ckeditor_mentions_notice'] = array(
+      '#type' => 'item',
+      '#markup' => $this->t("<strong>Note:</strong> The 'CKEditor Mentions' displays does not have any row style options!"),
+    );
   }
 
   /**

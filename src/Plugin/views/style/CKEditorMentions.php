@@ -78,15 +78,9 @@ class CKEditorMentions extends StylePluginBase {
       return parent::render();
     }
 
-    // Group the rows according to the grouping field, if specified.
     $sets = $this->renderGrouping($this->view->result, $this->options['grouping']);
-
-    // Grab the alias of the 'id' field added by
-    // entity_reference_plugin_display.
     $id_field_alias = $this->view->storage->get('base_field');
 
-    // @todo We don't display grouping info for now. Could be useful for select
-    // widget, though.
     $results = array();
     foreach ($sets as $records) {
       foreach ($records as $values) {
