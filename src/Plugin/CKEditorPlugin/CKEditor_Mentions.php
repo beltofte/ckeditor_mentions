@@ -9,11 +9,13 @@ namespace Drupal\ckeditor_mentions\Plugin\CKEditorPlugin;
 
 use Drupal\ckeditor\CKEditorPluginBase;
 use Drupal\ckeditor\CKEditorPluginConfigurableInterface;
-use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\editor\Entity\Editor;
+use Drupal\views\Views;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Entity\EntityManagerInterface;
+
 
 /**
  * Defines the "ckeditor_mentions" plugin.
@@ -27,10 +29,19 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class CKEditor_Mentions extends CKEditorPluginBase implements CKEditorPluginConfigurableInterface, ContainerFactoryPluginInterface {
 
   /**
+   * The entity manager.
+   *
+   * @var \Drupal\Core\Entity\EntityManagerInterface
+   */
+  protected $entityManager;
+
+  /**
    * {@inheritdoc}
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityManagerInterface $entity_manager) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
+
+    $this->entityManager = $entity_manager;
   }
 
   /**
@@ -40,7 +51,8 @@ class CKEditor_Mentions extends CKEditorPluginBase implements CKEditorPluginConf
     return new static(
       $configuration,
       $plugin_id,
-      $plugin_definition
+      $plugin_definition,
+      $container->get('entity.manager')
     );
   }
 
@@ -56,7 +68,7 @@ class CKEditor_Mentions extends CKEditorPluginBase implements CKEditorPluginConf
    */
   public function getConfig(Editor $editor) {
     return array(
-      'ckeditor_mentions_view_machine_name' => '',
+      'view_display' => '',
     );
   }
 
@@ -81,27 +93,17 @@ class CKEditor_Mentions extends CKEditorPluginBase implements CKEditorPluginConf
    */
   public function settingsForm(array $form, FormStateInterface $form_state, Editor $editor) {
     $settings = $editor->getSettings();
+    $options = $this->getViewDisplays();
 
-    /*
-    $all_profiles = $this->linkitProfileStorage->loadMultiple();
-
-    $options = array();
-    foreach ($all_profiles as $profile) {
-      $options[$profile->id()] = $profile->label();
-    }
-    */
-
-
-
-    $form['linkit_profile'] = array(
+    $form['view_display'] = array(
       '#type' => 'select',
-      '#title' => t('Select a linkit profile'),
-      '#options' => array(),
-      '#default_value' => isset($settings['plugins']['linkit']) ? $settings['plugins']['linkit'] : '',
-      '#empty_option' => $this->t('- Select profile -'),
-      '#description' => $this->t('Select the linkit profile you wish to use with this text format.'),
+      '#title' => t('View used to search in the users'),
+      '#options' => $options,
+      '#default_value' => isset($settings['plugins']['ckeditor_mentions']['view_display']) ? $settings['plugins']['ckeditor_mentions']['view_display'] : '',
+      '#empty_option' => $this->t('- Select view display -'),
+      '#description' => '<p>' . $this->t('Choose the view and display that searches in the users that can be mentioned in this text format.<br />Only views with a display of type "CKEditor Mentions" are eligible.') . '</p>',
       '#element_validate' => array(
-        array($this, 'validateLinkitProfileSelection'),
+        array($this, 'validateViewDisplaySelection'),
       ),
     );
 
@@ -109,13 +111,34 @@ class CKEditor_Mentions extends CKEditorPluginBase implements CKEditorPluginConf
   }
 
   /**
-   * #element_validate handler for the "linkit_profile" element in settingsForm().
+   * #element_validate handler for the "ckeditor_mentions_view_display" element in settingsForm().
    */
-  public function validateLinkitProfileSelection(array $element, FormStateInterface $form_state) {
+  public function validateViewDisplaySelection(array $element, FormStateInterface $form_state) {
     $toolbar_buttons = $form_state->getValue(array('editor', 'settings', 'toolbar', 'button_groups'));
-    if (strpos($toolbar_buttons, '"Linkit"') !== FALSE && empty($element['#value'])) {
-      $form_state->setError($element, t('Please select the linkit profile you wish to use.'));
+    if (strpos($toolbar_buttons, '"Mentions"') !== FALSE && empty($element['#value'])) {
+      $form_state->setError($element, t('Please select the view display you wish to use.'));
     }
+  }
+
+  /**
+   * Find view displays of the type 'ckeditor_mentions' and prepare options array with the result.
+   *
+   * @return array
+   *   Return array with view displays.
+   */
+  private function getViewDisplays() {
+    $displays = Views::getApplicableViews('ckeditor_mentions_display');
+    $view_storage = $this->entityManager->getStorage('view');
+
+    $options = array();
+    foreach ($displays as $data) {
+      list($view_id, $display_id) = $data;
+      $view = $view_storage->load($view_id);
+      $display = $view->get('display');
+      $options[$view_id . ':' . $display_id] = $view->get('label') . '(' . $view_id . ') - ' . $display[$display_id]['display_title'];
+    }
+
+    return $options;
   }
 
 }
