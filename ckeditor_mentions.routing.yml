@@ -1,0 +1,8 @@
+ckeditor_mentions.callback::
+  path: '/ckeditor_mentions/callback/{text_format}'
+  defaults:
+    _controller: '\Drupal\ckeditor_mentions\Controller\CallbackController::callback'
+  requirements:
+    _permission: 'access user profiles'
+  options:
+    _theme: ajax_base_page
